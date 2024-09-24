@@ -31,33 +31,38 @@ class _HomeState extends State<Home> {
     fetchImages();
   }
 
-  Future<void> fetchImages() async {
-    if (isLoading || !hasMoreImages) return;
+ Future<void> fetchImages() async {
+ 
+  if (isLoading || !hasMoreImages) return;
 
+  setState(() {
+    isLoading = true;
+   
+  });
+
+  final response = await http.get(Uri.parse(
+      'https://api.unsplash.com/photos?page=$currentPage&per_page=10&client_id=e-QtE1mUAutDN7R91luG6PtAZhd8c75yKSXNrqaklQw'));
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
     setState(() {
-      isLoading = true;
-    });
-
-    final response = await http.get(Uri.parse(
-        'https://api.unsplash.com/photos?page=$currentPage&per_page=10&client_id=e-QtE1mUAutDN7R91luG6PtAZhd8c75yKSXNrqaklQw'));
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      setState(() {
-        currentPage++;
+      if (data.isEmpty) {
+        hasMoreImages = false; 
+      } else {
+       
         imageUrls.addAll(data.map((e) => e['urls']['regular'] as String).toList());
-        if (data.isEmpty) {
-          hasMoreImages = false; 
-        }
-      });
-    } else {
-      print('Error fetching images: ${response.statusCode}');
-    }
-
-    setState(() {
-      isLoading = false;
+        currentPage++;
+      }
     });
+  } else {
+    print('Error fetching images: ${response.statusCode}');
   }
+
+  setState(() {
+    isLoading = false;
+  });
+}
+
 
   Future<void> fetchSearchHistory() async {
     final snapshot = await FirebaseFirestore.instance.collection('search_history').get();
@@ -113,7 +118,7 @@ class _HomeState extends State<Home> {
             ),
           ),
           
-          if (searchHistory.isNotEmpty) 
+          if (searchHistory.isNotEmpty && showhistory) 
             Container(
               color: Colors.grey[200],
               child: ListView.builder(
@@ -137,6 +142,8 @@ class _HomeState extends State<Home> {
               child: CarouselSlider.builder(
                 itemCount: imageUrls.length,
                 itemBuilder: (context, index, _) {
+                  print(index);
+                  print(imageUrls.length);
                   if (index == imageUrls.length - 1) {
                     fetchImages(); 
                   }
@@ -146,6 +153,7 @@ class _HomeState extends State<Home> {
                   height: 400,
                   enlargeCenterPage: true,
                   autoPlay: true,
+                  
                 ),
               ),
             ),
